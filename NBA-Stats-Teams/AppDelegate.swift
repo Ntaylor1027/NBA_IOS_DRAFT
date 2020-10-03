@@ -16,6 +16,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        preloadData();
         return true
     }
 
@@ -33,6 +34,64 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Use this method to release any resources that were specific to the discarded scenes, as they will not return.
     }
 
+    private func preloadData(){
+        let preloadedDataKey = "didPreloadData"
+        let userDefaults = UserDefaults.standard
+        print("Checking if Data needs Preloading...")
+        if userDefaults.bool(forKey: preloadedDataKey) == false{
+            // Preload
+            print("Preloading Data...");
+            guard let urlPath = Bundle.main.url(forResource: "PlayersData", withExtension: "plist") else {return}
+            
+            let backgroundContext = persistentContainer.newBackgroundContext();
+            persistentContainer.viewContext.automaticallyMergesChangesFromParent = true;
+            
+            
+            
+            backgroundContext.perform {
+                let arrayContents = NSArray(contentsOf: urlPath) as? [Dictionary<String, Any>];
+                
+                do {
+                    for playerDict in arrayContents! {
+                        
+                        let playerObject = Player(context: backgroundContext)
+                        playerObject.name = playerDict["Name"] as! String;
+                        playerObject.pos = playerDict["Pos"] as! String;
+                        playerObject.age = playerDict["Age"] as! Int16;
+                        playerObject.team = playerDict["Team"] as! String;
+                        playerObject.fg = playerDict["FG%"] as! Double;
+                        playerObject.fg3 = playerDict["3P%"] as! Double;
+                        playerObject.pts = playerDict["PTS"] as! Double;
+                        playerObject.ast = playerDict["AST"] as! Double;
+                        playerObject.reb = playerDict["REB"] as! Double;
+                        playerObject.imageName = playerDict["Image"] as! String;
+                        
+                    }
+                    try backgroundContext.save();
+                    userDefaults.set(true, forKey: preloadedDataKey);
+                    print("Data Successfully Loaded!")
+                } catch {
+                    print ("Data Failed to Preload!!!")
+                    print(error.localizedDescription)
+                    }
+            }
+                
+            
+            
+            /*
+            let arrayContents = NSArray(contentsOf: urlPath) as? [Dictionary<String, Any>];
+            for playerDict in arrayContents! {
+                //print(item)
+                print(playerDict["Name"] as! String)
+                
+            }
+            userDefaults.set(true, forKey: preloadedDataKey);
+            */
+            
+        }
+
+    }
+    
     // MARK: - Core Data stack
 
     lazy var persistentContainer: NSPersistentContainer = {
